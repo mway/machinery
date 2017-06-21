@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/garyburd/redigo/redis"
 	"github.com/mway/machinery/v1/common"
 	"github.com/mway/machinery/v1/config"
 	"github.com/mway/machinery/v1/log"
 	"github.com/mway/machinery/v1/retry"
 	"github.com/mway/machinery/v1/tasks"
-	"github.com/garyburd/redigo/redis"
 	"gopkg.in/redsync.v1"
 )
 
@@ -268,20 +268,33 @@ func (b *RedisBroker) nextTask(queue string) (result []byte, err error) {
 	conn := b.open()
 	defer conn.Close()
 
-	items, err := redis.ByteSlices(conn.Do("BLPOP", queue, 1))
-	if err != nil {
-		return []byte{}, err
+	// n.b. twemproxy doesn't support BLPOP. Fortunately, since we're only blocking on a single queue, we can
+	//      just poll quickly (ish) with a timer. Microseconds from many workers would probably overwhelm the
+	//      server, so 10ms is a fair latency tradeoff.
+	for {
+		raw, err := conn.Do("LPOP", queue)
+		if err != nil && err != redis.ErrNil {
+			return []byte{}, err
+		}
+
+		if raw != nil {
+			resp, err := redis.Bytes(raw, nil)
+			if err != nil {
+				return []byte{}, err
+			}
+
+			return resp, nil
+		}
+
+		select {
+		case <-time.After(time.Second):
+			return []byte{}, redis.ErrNil
+		case <-b.stopReceivingChan:
+			return []byte{}, redis.ErrNil
+		default: // noop
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
-
-	// items[0] - the name of the key where an element was popped
-	// items[1] - the value of the popped element
-	if len(items) != 2 {
-		return []byte{}, redis.ErrNil
-	}
-
-	result = items[1]
-
-	return result, nil
 }
 
 // nextDelayedTask pops a value from the ZSET key using WATCH/MULTI/EXEC commands.

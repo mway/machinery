@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/RichardKnop/machinery/v1/config"
+	"github.com/mway/machinery/v1/config"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/RichardKnop/machinery/v1"
-	"github.com/RichardKnop/machinery/v1/backends"
-	"github.com/RichardKnop/machinery/v1/brokers"
-	"github.com/RichardKnop/machinery/v1/config"
+	"github.com/mway/machinery/v1"
+	"github.com/mway/machinery/v1/backends"
+	"github.com/mway/machinery/v1/brokers"
+	"github.com/mway/machinery/v1/config"
 	"github.com/stretchr/testify/assert"
 )
 

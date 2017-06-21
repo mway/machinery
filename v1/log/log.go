@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/mway/logging"
+	"github.com/RichardKnop/logging"
 )
 
 var (

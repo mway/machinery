@@ -8,7 +8,7 @@ import (
 
 	"context"
 
-	"github.com/RichardKnop/machinery/v1/log"
+	"github.com/mway/machinery/v1/log"
 )
 
 // ErrTaskPanicked ...

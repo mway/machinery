@@ -271,6 +271,10 @@ func (b *RedisBroker) nextTask(queue string) (result []byte, err error) {
 	// n.b. twemproxy doesn't support BLPOP. Fortunately, since we're only blocking on a single queue, we can
 	//      just poll quickly (ish) with a timer. Microseconds from many workers would probably overwhelm the
 	//      server, so 10ms is a fair latency tradeoff.
+
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+
 	for {
 		raw, err := conn.Do("LPOP", queue)
 		if err != nil && err != redis.ErrNil {
@@ -287,9 +291,7 @@ func (b *RedisBroker) nextTask(queue string) (result []byte, err error) {
 		}
 
 		select {
-		case <-time.After(time.Second):
-			return []byte{}, redis.ErrNil
-		case <-b.stopReceivingChan:
+		case <-timer.C:
 			return []byte{}, redis.ErrNil
 		default: // noop
 			time.Sleep(10 * time.Millisecond)
